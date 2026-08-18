@@ -4603,7 +4603,7 @@ isForwarded: true,
  
 break 
 
-// ============ NSFW VIDEO (Debug + Headers)
+// ============ NSFW VIDEO (rule34video.com)
 case 'vhentai':
 case 'vcum':
 case 'vpussy':
@@ -4621,76 +4621,98 @@ case 'vpai':
 case 'vfoot':
 case 'vmaids': {
   const axios = require('axios')
+  const cheerio = require('cheerio')
   let tag = command.slice(1)
-  console.log(`[VIDEO] Command: ${command} | Tag: ${tag}`)
-  
+
+  console.log(`[VIDEO] Tag: ${tag}`)
   m.reply("Loading video 🔁")
 
   try {
+    const headers = {
+      'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+      'Accept': 'text/html,application/xhtml+xml',
+      'Referer': 'https://rule34video.com/'
+    }
+
+    // 1. Search videos by tag
+    let searchUrl = `https://rule34video.com/search/${encodeURIComponent(tag)}/`
+    console.log(`[VIDEO] Searching: ${searchUrl}`)
+
+    let { data: html } = await axios.get(searchUrl, { headers, timeout: 20000 })
+    let $ = cheerio.load(html)
+
+    // Collect video page links
+    let links = []
+    $('a.th.js-open-popup, a.th').each((i, el) => {
+      let href = $(el).attr('href')
+      if (href && (href.includes('/video/') || href.includes('/videos/'))) {
+        if (!href.startsWith('http')) href = 'https://rule34video.com' + href
+        links.push(href)
+      }
+    })
+
+    // Remove duplicates
+    links = [...new Set(links)]
+    console.log(`[VIDEO] Found ${links.length} videos`)
+
+    if (links.length === 0) {
+      return reply(`Tidak menemukan video untuk tag *${tag}*\nCoba tag lain (.vhentai .vboobs .vcum)`)
+    }
+
+    // 2. Pick random video page
+    let videoPage = links[Math.floor(Math.random() * links.length)]
+    console.log(`[VIDEO] Opening: ${videoPage}`)
+
+    // 3. Get direct download link from video page
+    let { data: vhtml } = await axios.get(videoPage, { headers, timeout: 20000 })
+    let $$ = cheerio.load(vhtml)
+
     let videoUrl = null
 
-    // ===== Gelbooru with proper headers =====
-    console.log(`[VIDEO] Trying Gelbooru...`)
-    try {
-      let { data } = await axios.get(`https://gelbooru.com/index.php`, {
-        params: {
-          page: 'dapi',
-          s: 'post',
-          q: 'index',
-          json: 1,
-          limit: 40,
-          tags: tag
-        },
-        headers: {
-          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-          'Accept': 'application/json'
-        },
-        timeout: 15000
-      })
-
-      console.log(`[VIDEO] Gelbooru raw type:`, typeof data)
-      console.log(`[VIDEO] Gelbooru keys:`, data ? Object.keys(data).slice(0, 8) : 'null')
-
-      let posts = []
-      if (Array.isArray(data)) posts = data
-      else if (data?.post) posts = Array.isArray(data.post) ? data.post : [data.post]
-      else if (data?.posts) posts = data.posts
-
-      console.log(`[VIDEO] Gelbooru posts:`, posts.length)
-
-      let videos = posts.filter(p => {
-        let f = (p.file_url || p.sample_url || p.preview_url || '').toLowerCase()
-        return f.includes('.mp4') || f.includes('.webm')
-      })
-
-      console.log(`[VIDEO] Gelbooru videos:`, videos.length)
-
-      if (videos.length > 0) {
-        let random = videos[Math.floor(Math.random() * videos.length)]
-        videoUrl = random.file_url || random.sample_url
-        console.log(`[VIDEO] Selected:`, videoUrl)
+    // Method A: look for download links (best quality usually)
+    $$('a[href*="download=true"]').each((i, el) => {
+      let href = $$(el).attr('href')
+      if (href && (href.includes('.mp4') || href.includes('download=true'))) {
+        if (!href.startsWith('http')) href = 'https://rule34video.com' + href
+        videoUrl = href
       }
-    } catch (e) {
-      console.log(`[VIDEO] Gelbooru ERROR:`, e.message)
-      if (e.response) console.log(`[VIDEO] Status:`, e.response.status)
-    }
+    })
 
-    // ===== Result =====
+    // Method B: fallback - look for source / video tags
     if (!videoUrl) {
-      return reply(`Tidak menemukan video untuk tag *${tag}*\nCoba tag lain (.vhentai / .vboobs / .vcum)`)
+      $$('source, video source, a[href$=".mp4"]').each((i, el) => {
+        let src = $$(el).attr('src') || $$(el).attr('href')
+        if (src && src.includes('.mp4')) {
+          if (!src.startsWith('http')) src = 'https://rule34video.com' + src
+          videoUrl = src
+        }
+      })
     }
 
-    console.log(`[VIDEO] Sending video...`)
+    // Method C: try common pattern from page
+    if (!videoUrl) {
+      let match = vhtml.match(/https?:\/\/[^"']+\.mp4[^"']*/i)
+      if (match) videoUrl = match[0]
+    }
+
+    if (!videoUrl) {
+      console.log(`[VIDEO] No direct link found on page`)
+      return reply(`Gagal mendapatkan link video.\nCoba lagi.`)
+    }
+
+    console.log(`[VIDEO] Direct URL: ${videoUrl}`)
+
+    // 4. Send video
     await LightSecret.sendMessage(m.chat, {
       video: { url: videoUrl },
-      caption: `*NSFW Video*\nTag: ${tag}\n\n${foother}`
+      caption: `*NSFW Video*\nTag: ${tag}\nSource: rule34video.com\n\n${foother}`
     }, { quoted: m })
 
-    console.log(`[VIDEO] Success`)
+    console.log(`[VIDEO] Sent successfully`)
 
   } catch (err) {
-    console.log(`[VIDEO] FATAL:`, err.message || err)
-    reply(`Gagal kirim video.\n${err.message || err}`)
+    console.log(`[VIDEO] ERROR:`, err.message || err)
+    reply(`Gagal mengambil video.\n${err.message || err}`)
   }
 }
 break
