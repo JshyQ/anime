@@ -121,7 +121,8 @@ const time = moment.tz('Asia/Jakarta').format('HH:mm:ss');
 const date = moment.tz('Asia/Jakarta').format('DD/MM/YYYY');
 const time2 = moment.tz('Asia/Jakarta').format('HH:mm:ss');
 //
-        if (time2 < "05:00:00") {
+      let ucapanWaktu = "Selamat Malam 🌃";
+if (time2 < "05:00:00") {
 	ucapanWaktu = "Selamat Pagi 🌄";
 } else if (time2 < "11:00:00") {
 	ucapanWaktu = "Selamat Pagi 🌄";
@@ -131,6 +132,8 @@ const time2 = moment.tz('Asia/Jakarta').format('HH:mm:ss');
 	ucapanWaktu = "Selamat Sore 🌇";
 } else if (time2 < "19:00:00") {
 	ucapanWaktu = "Selamat Petang 🌆";
+} else {
+	ucapanWaktu = "Selamat Malam 🌃";
 }
 //
 
