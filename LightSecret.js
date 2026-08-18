@@ -4603,38 +4603,20 @@ isForwarded: true,
  
 break 
 
-// ============ NSFW VIDEO (Public)
-case 'vhentai':
-case 'vcum':
-case 'vpussy':
-case 'vass':
-case 'vboobs':
-case 'vblowjob':
-case 'vanal':
-case 'vthighs':
-case 'vlesbian':
-case 'vneko':
-case 'vtrap':
-case 'vyaoi':
-case 'vyuri':
-case 'vpai':
-case 'vfoot':
-case 'vmaids': {
-  // Get tag from command (remove the first "v")
-  let tag = command.slice(1) // vhentai → hentai
+// Put this near the top of the switch, or use a special check
+if (command.startsWith('v') && command.length > 1) {
+  if (!isOwner && !isPremium) return reply(mess.prem)
   
+  let tag = command.slice(1)
   m.reply("Loading video 🔁")
 
   try {
-    // Search video on Rule34
     let res = await fetchJson(`https://api.rule34.xxx/index.php?page=dapi&s=post&q=index&tags=${tag}+video&json=1&limit=50`)
     
     if (!res || !Array.isArray(res) || res.length === 0) {
-      // Try without forcing "video" tag
       res = await fetchJson(`https://api.rule34.xxx/index.php?page=dapi&s=post&q=index&tags=${tag}&json=1&limit=50`)
     }
 
-    // Filter only video files
     let videos = res.filter(x => 
       x.file_url && 
       (x.file_url.endsWith('.mp4') || x.file_url.endsWith('.webm') || x.file_url.includes('.mp4'))
@@ -4642,21 +4624,19 @@ case 'vmaids': {
 
     if (videos.length === 0) return reply(`Tidak menemukan video untuk tag *${tag}*`)
 
-    // Pick random video
     let random = videos[Math.floor(Math.random() * videos.length)]
-    let videoUrl = random.file_url
-
+    
     await LightSecret.sendMessage(m.chat, {
-      video: { url: videoUrl },
+      video: { url: random.file_url },
       caption: `*NSFW Video*\nTag: ${tag}\n\n${foother}`
     }, { quoted: m })
 
   } catch (err) {
     console.log(err)
-    reply("Gagal mengambil video. Coba tag lain atau coba lagi nanti.")
+    reply("Gagal mengambil video. Coba lagi nanti.")
   }
+  break // important if inside switch
 }
-break
 				
 // ============Nsfw
    case 'waifu':
