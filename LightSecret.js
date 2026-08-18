@@ -4740,52 +4740,101 @@ case 'wave':
 case 'boop':
 case 'snuggle':
 case 'bully': {
-  // Need to mention someone
-  let who = m.mentionedJid && m.mentionedJid[0] 
-    ? m.mentionedJid[0] 
-    : m.quoted 
-      ? m.quoted.sender 
-      : null
+  const axios = require('axios')
 
-  if (!who) return reply(`Tag seseorang!\nContoh: ${prefix + command} @user`)
+  let who = m.mentionedJid?.[0] || (m.quoted ? m.quoted.sender : null)
+  if (!who) return reply(`Tag someone!\nExample: ${prefix + command} @user`)
 
-  // Some actions that don't really need a target (optional)
-  // but we still require tag as you requested
+  // Map aliases to correct API endpoint
+  let endpoint = command
+  if (command === 'pats') endpoint = 'pat'
+  if (command === 'hold' || command === 'handholding') endpoint = 'handhold'
+  if (command === 'boop') endpoint = 'poke'
+  if (command === 'greet') endpoint = 'wave'
+  if (command === 'snuggle') endpoint = 'cuddle'
+
+  // Playful captions
+  const captions = {
+    hug: 'is hugging',
+    cuddle: 'is cuddling with',
+    kiss: 'kissed',
+    lick: 'licked',
+    nom: 'is nomming',
+    pat: 'is patting',
+    pats: 'is patting',
+    poke: 'poked',
+    boop: 'booped',
+    slap: 'slapped',
+    stare: 'is staring at',
+    highfive: 'high-fived',
+    bite: 'bit',
+    greet: 'greeted',
+    wave: 'waved at',
+    punch: 'punched',
+    handholding: 'is holding hands with',
+    hold: 'is holding',
+    tickle: 'is tickling',
+    kill: 'killed',
+    snuggle: 'is snuggling with',
+    bully: 'is bullying'
+  }
+
+  let actionText = captions[command] || command
+  let caption = `@${m.sender.split('@')[0]} ${actionText} @${who.split('@')[0]}! How cute~ 💕`
 
   try {
-    // Map some aliases to nekos.best endpoints
-    let endpoint = command
-    if (command === 'pats') endpoint = 'pat'
-    if (command === 'hold') endpoint = 'handhold'
-    if (command === 'handholding') endpoint = 'handhold'
-    if (command === 'boop') endpoint = 'poke'
-    if (command === 'greet') endpoint = 'wave'
-    if (command === 'snuggle') endpoint = 'cuddle'
+    let gifUrl = null
 
-    // Fetch GIF from nekos.best
-    let res = await fetchJson(`https://nekos.best/api/v2/${endpoint}`)
-    let gifUrl = res?.results?.[0]?.url
-
-    if (!gifUrl) {
-      // Fallback to waifu.pics
-      let res2 = await fetchJson(`https://api.waifu.pics/sfw/${endpoint}`)
-      gifUrl = res2?.url
+    // ===== 1. nekos.best (with required User-Agent) =====
+    try {
+      let { data } = await axios.get(`https://nekos.best/api/v2/${endpoint}`, {
+        headers: {
+          'User-Agent': 'RabbotHOLE (whatsapp-bot)'
+        },
+        timeout: 10000
+      })
+      gifUrl = data?.results?.[0]?.url
+      console.log(`[REACTION] nekos.best:`, gifUrl ? 'OK' : 'empty')
+    } catch (e) {
+      console.log(`[REACTION] nekos.best error:`, e.message)
     }
 
-    if (!gifUrl) return reply(`Gagal mengambil GIF untuk *${command}*`)
+    // ===== 2. Fallback: otakuGIFs / other =====
+    if (!gifUrl) {
+      try {
+        let { data } = await axios.get(`https://api.otakugifs.xyz/gif?reaction=${endpoint}`, {
+          timeout: 10000
+        })
+        gifUrl = data?.url
+        console.log(`[REACTION] otakugifs:`, gifUrl ? 'OK' : 'empty')
+      } catch (e) {
+        console.log(`[REACTION] otakugifs error:`, e.message)
+      }
+    }
 
-    let teks = `*@${m.sender.split('@')[0]}* ${command} *@${who.split('@')[0]}*`
+    // ===== 3. Last fallback: some common nekos.best alternatives =====
+    if (!gifUrl) {
+      try {
+        let { data } = await axios.get(`https://nekos.best/api/v2/${endpoint}?amount=1`, {
+          headers: { 'User-Agent': 'RabbotHOLE (whatsapp-bot)' },
+          timeout: 10000
+        })
+        gifUrl = data?.results?.[0]?.url
+      } catch (e) {}
+    }
+
+    if (!gifUrl) return reply(`Failed to get a GIF for *${command}*. Try again later.`)
 
     await LightSecret.sendMessage(m.chat, {
       video: { url: gifUrl },
       gifPlayback: true,
-      caption: teks,
+      caption: caption,
       mentions: [m.sender, who]
     }, { quoted: m })
 
   } catch (err) {
-    console.log(err)
-    reply(`Gagal mengirim ${command}. Coba lagi.`)
+    console.log(`[REACTION] FATAL:`, err.message)
+    reply(`Failed to send ${command}.`)
   }
 }
 break
