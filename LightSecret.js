@@ -4603,40 +4603,67 @@ isForwarded: true,
  
 break 
 
-// Put this near the top of the switch, or use a special check
-if (command.startsWith('v') && command.length > 1) {
-  if (!isOwner && !isPremium) return reply(mess.prem)
+// ============ NSFW VIDEO (Public)
+case 'vhentai':
+case 'vcum':
+case 'vpussy':
+case 'vass':
+case 'vboobs':
+case 'vblowjob':
+case 'vanal':
+case 'vthighs':
+case 'vlesbian':
+case 'vneko':
+case 'vtrap':
+case 'vyaoi':
+case 'vyuri':
+case 'vpai':
+case 'vfoot':
+case 'vmaids': {
+  let tag = command.slice(1) // vhentai → hentai
   
-  let tag = command.slice(1)
   m.reply("Loading video 🔁")
 
   try {
-    let res = await fetchJson(`https://api.rule34.xxx/index.php?page=dapi&s=post&q=index&tags=${tag}+video&json=1&limit=50`)
-    
-    if (!res || !Array.isArray(res) || res.length === 0) {
-      res = await fetchJson(`https://api.rule34.xxx/index.php?page=dapi&s=post&q=index&tags=${tag}&json=1&limit=50`)
+    // Gelbooru (no API key needed)
+    let url = `https://gelbooru.com/index.php?page=dapi&s=post&q=index&json=1&limit=40&tags=${encodeURIComponent(tag)}+video`
+    let res = await fetchJson(url)
+
+    // Sometimes response is { post: [...] } or just array
+    let posts = Array.isArray(res) ? res : (res?.post || res?.posts || [])
+
+    if (!posts || posts.length === 0) {
+      // Try without "video" tag
+      url = `https://gelbooru.com/index.php?page=dapi&s=post&q=index&json=1&limit=40&tags=${encodeURIComponent(tag)}`
+      res = await fetchJson(url)
+      posts = Array.isArray(res) ? res : (res?.post || res?.posts || [])
     }
 
-    let videos = res.filter(x => 
-      x.file_url && 
-      (x.file_url.endsWith('.mp4') || x.file_url.endsWith('.webm') || x.file_url.includes('.mp4'))
-    )
+    // Filter only real video files
+    let videos = posts.filter(p => {
+      let file = p.file_url || p.file || p.sample_url || ""
+      return file && (file.includes(".mp4") || file.includes(".webm"))
+    })
 
-    if (videos.length === 0) return reply(`Tidak menemukan video untuk tag *${tag}*`)
+    if (videos.length === 0) {
+      return reply(`Tidak menemukan video untuk tag *${tag}*\nCoba tag lain.`)
+    }
 
+    // Pick random
     let random = videos[Math.floor(Math.random() * videos.length)]
-    
+    let videoUrl = random.file_url || random.file || random.sample_url
+
     await LightSecret.sendMessage(m.chat, {
-      video: { url: random.file_url },
+      video: { url: videoUrl },
       caption: `*NSFW Video*\nTag: ${tag}\n\n${foother}`
     }, { quoted: m })
 
   } catch (err) {
-    console.log(err)
-    reply("Gagal mengambil video. Coba lagi nanti.")
+    console.log("Video Error:", err)
+    reply(`Gagal mengambil video.\nError: ${err.message || err}`)
   }
-  break // important if inside switch
 }
+break
 				
 // ============Nsfw
    case 'waifu':
