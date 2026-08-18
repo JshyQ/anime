@@ -4,11 +4,11 @@ const { version } = require("./package.json")
 //~~~~~~~~~SETTING BOT~~~~~~~~~~//
 
 // Bebas Ubah
-global.owner = "628993937289"
-global.nobot = "628993937289"
-global.namaowner = "ANIME-AI"
-global.namaBot = "ANIMEAI"
-global.title = "ANIME-AI"
+global.owner = "6285111606001"
+global.nobot = "6285111606001"
+global.namaowner = "J"
+global.namaBot = "RabbotHOLE"
+global.title = "RabbotHOLE"
 pairqr: true
 
 // Jangan Di ubah
@@ -37,14 +37,14 @@ global.dana = "08993937289"
 global.gopay = "085129911526"
 
 // ===={ Set Link }
-global.ch = 'https://whatsapp.com/channel/0029Vb2K7scK0IBkPoAGgk28'
+global.ch = 'https://whatsapp.com/channel/0029VbB23f15a240CU6QX52L'
 global.idch = '120363368222492263@newsletter'
 global.linkgc = 'https://chat.whatsapp.com/FKLOiDRsK4T9DcSvFGxNBx'
 global.yt = 'https://youtube.com/@xx'
 global.nekorin = "https://api.nekorinn.my.id"
 global.idgc = "120363399209756764@g.us"
 // set prefix
-global.setprefix = ".", "/", "#"
+global.setprefix = "#"
 
 // User Sosmed
 global.tt = "@lightsecrethosting"
@@ -64,7 +64,7 @@ global.apikey = "ptla" //ptla
 global.capikey = "ptlc" //ptlc
 
 // [ THEME URL & URL ] ========//
-global.thumbnail = 'https://files.catbox.moe/4wk4wd.jpg'
+global.thumbnail = 'https://files.catbox.moe/pec0wz.jpg'
 
 // Settings reply ~~~~~~~~~//
 global.mess = {
