@@ -4604,89 +4604,98 @@ isForwarded: true,
 break 
 
 // ============Nsfw
-    case 'waifu':
-    case 'neko':
-    case 'shinobu':
-    case 'megumin':
-    case 'bully':
-    case 'cuddle':
-    case 'cry':
-    case 'hug':
-    case 'awoo':
-    case 'kiss':
-    case 'lick':
-    case 'pat':
-    case 'smug':
-    case 'bonk':
-    case 'yeet':
-    case 'blush':
-    case 'smile':
-    case 'wave':
-    case 'highfive':
-    case 'handhold':
-    case 'nom':
-    case 'bite':
-    case 'glomp':
-    case 'slap':
-    case 'kill':
-    case 'happy':
-    case 'wink':
-    case 'poke':
-    case 'dance':
-    case 'cringe':
-    case 'trap':
-    case 'blowjob':
-    case 'hentai':
-    case 'boobs':
-    case 'ass':
-    case 'pussy':
-    case 'thighs':
-    case 'lesbian':
-    case 'lewdneko':
-    case 'cum': {
-      if (!isOwner && !isPremium) return reply(mess.prem)
-      m.reply("Loading 🔁")
-      try {
-        let haha = await fetchJson(`https://rule34.xxx/index.php?page=dapi&s=post&q=index&tags=${command}&json=1`)
-        if (haha && haha[0]?.file_url) {
-          let imgUrl = haha[0].file_url
-          LightSecret.sendMessage(m.chat, {
-            image: {
-              url: imgUrl
-            },
-            caption: foother
-          }, {
-            quoted: m
-          })
-        }
-      } catch (err) {
-        try {
-          let atuh = await fetchJson(`https://api.waifu.pics/nsfw/${command}`)
-          if (atuh.url) {
-            LightSecret.sendMessage(m.chat, {
-              image: {
-                url: atuh.url
-              },
-              caption: foother
-            }, {
-              quoted: m
-            })
-          }
-        } catch (err) {
-          let sok = await fetchJson(`https://api.waifu.pics/sfw/${command}`)
-          if (sok.url) {
-            LightSecret.sendMessage(m.chat, {
-              image: {
-                url: sok.url
-              },
-              caption: foother
-            }, {
-              quoted: m
-            })
-          }
-        }
-      }
-    }
+   case 'waifu':
+case 'neko':
+case 'shinobu':
+case 'megumin':
+case 'bully':
+case 'cuddle':
+case 'cry':
+case 'hug':
+case 'awoo':
+case 'kiss':
+case 'lick':
+case 'pat':
+case 'smug':
+case 'bonk':
+case 'yeet':
+case 'blush':
+case 'smile':
+case 'wave':
+case 'highfive':
+case 'handhold':
+case 'nom':
+case 'bite':
+case 'glomp':
+case 'slap':
+case 'kill':
+case 'happy':
+case 'wink':
+case 'poke':
+case 'dance':
+case 'cringe':
+case 'trap':
+case 'blowjob':
+case 'hentai':
+case 'boobs':
+case 'ass':
+case 'pussy':
+case 'thighs':
+case 'lesbian':
+case 'lewdneko':
+case 'cum': {
+  if (!isOwner && !isPremium) return reply(mess.prem)
+  m.reply("Loading 🔁")
+
+  let imgUrl = null
+
+  // 1. Try waifu.im (NSFW)
+  try {
+    let res = await fetchJson(`https://api.waifu.im/search?included_tags=${command}&is_nsfw=true`)
+    if (res?.images?.[0]?.url) imgUrl = res.images[0].url
+  } catch (e) {}
+
+  // 2. Try nekos.life
+  if (!imgUrl) {
+    try {
+      let res = await fetchJson(`https://nekos.life/api/v2/img/${command}`)
+      if (res?.url) imgUrl = res.url
+    } catch (e) {}
+  }
+
+  // 3. Try lolicon.app (very good for NSFW)
+  if (!imgUrl) {
+    try {
+      let res = await fetchJson(`https://api.lolicon.app/setu/v2?tag=${command}&r18=1&size=regular`)
+      if (res?.data?.[0]?.urls?.regular) imgUrl = res.data[0].urls.regular
+    } catch (e) {}
+  }
+
+  // 4. Fallback Rule34
+  if (!imgUrl) {
+    try {
+      let res = await fetchJson(`https://rule34.xxx/index.php?page=dapi&s=post&q=index&tags=${command}&json=1`)
+      if (res?.[0]?.file_url) imgUrl = res[0].file_url
+    } catch (e) {}
+  }
+
+  // 5. Last try waifu.im without specific tag
+  if (!imgUrl) {
+    try {
+      let res = await fetchJson(`https://api.waifu.im/search?is_nsfw=true`)
+      if (res?.images?.[0]?.url) imgUrl = res.images[0].url
+    } catch (e) {}
+  }
+
+  if (imgUrl) {
+    await LightSecret.sendMessage(m.chat, {
+      image: { url: imgUrl },
+      caption: foother
+    }, { quoted: m })
+  } else {
+    reply("Gagal mengambil gambar dari semua API. Coba lagi nanti.")
+  }
+}
     break
     
     //============ Primbon
