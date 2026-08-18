@@ -7,8 +7,8 @@ const { version } = require("./package.json")
 global.owner = "6285111606001"
 global.nobot = "6285111606001"
 global.namaowner = "J"
-global.namaBot = "RabbotHOLE"
-global.title = "RabbotHOLE"
+global.namaBot = "RabbitHOLE"
+global.title = "RabbitHOLE"
 pairqr: true
 
 // Jangan Di ubah
