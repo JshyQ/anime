@@ -5,7 +5,7 @@ const { version } = require("./package.json")
 
 // Bebas Ubah
 global.owner = "6285111606001"
-global.nobot = "6285111606001"
+global.nobot = "6287746272020"
 global.namaowner = "J"
 global.namaBot = "RabbitHOLE"
 global.title = "RabbitHOLE"
