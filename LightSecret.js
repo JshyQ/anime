@@ -4603,7 +4603,7 @@ isForwarded: true,
  
 break 
 
-// ============ NSFW VIDEO (Fixed)
+// ============ NSFW VIDEO (Debug + Headers)
 case 'vhentai':
 case 'vcum':
 case 'vpussy':
@@ -4620,6 +4620,7 @@ case 'vyuri':
 case 'vpai':
 case 'vfoot':
 case 'vmaids': {
+  const axios = require('axios')
   let tag = command.slice(1)
   console.log(`[VIDEO] Command: ${command} | Tag: ${tag}`)
   
@@ -4628,74 +4629,58 @@ case 'vmaids': {
   try {
     let videoUrl = null
 
-    // ===== Gelbooru (improved) =====
+    // ===== Gelbooru with proper headers =====
     console.log(`[VIDEO] Trying Gelbooru...`)
     try {
-      // Search without forcing +video first
-      let url = `https://gelbooru.com/index.php?page=dapi&s=post&q=index&json=1&limit=50&tags=${encodeURIComponent(tag)}`
-      let res = await fetchJson(url)
-      
-      // Handle different response formats
+      let { data } = await axios.get(`https://gelbooru.com/index.php`, {
+        params: {
+          page: 'dapi',
+          s: 'post',
+          q: 'index',
+          json: 1,
+          limit: 40,
+          tags: tag
+        },
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+          'Accept': 'application/json'
+        },
+        timeout: 15000
+      })
+
+      console.log(`[VIDEO] Gelbooru raw type:`, typeof data)
+      console.log(`[VIDEO] Gelbooru keys:`, data ? Object.keys(data).slice(0, 8) : 'null')
+
       let posts = []
-      if (Array.isArray(res)) {
-        posts = res
-      } else if (res && Array.isArray(res.post)) {
-        posts = res.post
-      } else if (res && res.post) {
-        posts = [res.post]
-      }
+      if (Array.isArray(data)) posts = data
+      else if (data?.post) posts = Array.isArray(data.post) ? data.post : [data.post]
+      else if (data?.posts) posts = data.posts
 
       console.log(`[VIDEO] Gelbooru posts:`, posts.length)
 
-      // Filter video files
       let videos = posts.filter(p => {
-        let f = (p.file_url || p.sample_url || "").toLowerCase()
-        return f.includes(".mp4") || f.includes(".webm")
+        let f = (p.file_url || p.sample_url || p.preview_url || '').toLowerCase()
+        return f.includes('.mp4') || f.includes('.webm')
       })
 
-      console.log(`[VIDEO] Gelbooru videos found:`, videos.length)
+      console.log(`[VIDEO] Gelbooru videos:`, videos.length)
 
       if (videos.length > 0) {
         let random = videos[Math.floor(Math.random() * videos.length)]
         videoUrl = random.file_url || random.sample_url
-        console.log(`[VIDEO] Using Gelbooru:`, videoUrl)
+        console.log(`[VIDEO] Selected:`, videoUrl)
       }
     } catch (e) {
-      console.log(`[VIDEO] Gelbooru error:`, e.message || e)
-    }
-
-    // ===== Rule34 (even if auth is needed, try) =====
-    if (!videoUrl) {
-      console.log(`[VIDEO] Trying Rule34...`)
-      try {
-        let url = `https://api.rule34.xxx/index.php?page=dapi&s=post&q=index&json=1&limit=40&tags=${encodeURIComponent(tag)}`
-        let res = await fetchJson(url)
-
-        let posts = Array.isArray(res) ? res : []
-        console.log(`[VIDEO] Rule34 posts:`, posts.length)
-
-        let videos = posts.filter(p => {
-          let f = (p.file_url || "").toLowerCase()
-          return f.includes(".mp4") || f.includes(".webm")
-        })
-
-        if (videos.length > 0) {
-          let random = videos[Math.floor(Math.random() * videos.length)]
-          videoUrl = random.file_url
-          console.log(`[VIDEO] Using Rule34:`, videoUrl)
-        }
-      } catch (e) {
-        console.log(`[VIDEO] Rule34 error:`, e.message || e)
-      }
+      console.log(`[VIDEO] Gelbooru ERROR:`, e.message)
+      if (e.response) console.log(`[VIDEO] Status:`, e.response.status)
     }
 
     // ===== Result =====
     if (!videoUrl) {
-      console.log(`[VIDEO] No video found`)
-      return reply(`Tidak menemukan video untuk tag *${tag}*\nCoba tag lain (contoh: .vhentai .vcum .vboobs)`)
+      return reply(`Tidak menemukan video untuk tag *${tag}*\nCoba tag lain (.vhentai / .vboobs / .vcum)`)
     }
 
-    console.log(`[VIDEO] Sending...`)
+    console.log(`[VIDEO] Sending video...`)
     await LightSecret.sendMessage(m.chat, {
       video: { url: videoUrl },
       caption: `*NSFW Video*\nTag: ${tag}\n\n${foother}`
@@ -4704,7 +4689,7 @@ case 'vmaids': {
     console.log(`[VIDEO] Success`)
 
   } catch (err) {
-    console.log(`[VIDEO] FATAL:`, err)
+    console.log(`[VIDEO] FATAL:`, err.message || err)
     reply(`Gagal kirim video.\n${err.message || err}`)
   }
 }
