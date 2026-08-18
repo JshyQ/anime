@@ -4758,7 +4758,7 @@ case 'thighs':
 case 'lesbian':
 case 'lewdneko':
 case 'cum': {
-  if (!isOwner && !isPremium) return reply(mess.prem)
+ 
   m.reply("Loading 🔁")
 
   let imgUrl = null
