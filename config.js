@@ -64,7 +64,7 @@ global.apikey = "ptla" //ptla
 global.capikey = "ptlc" //ptlc
 
 // [ THEME URL & URL ] ========//
-global.thumbnail = 'https://files.catbox.moe/pec0wz.jpg'
+global.thumbnail = 'https://ibb.co.com/N2rcrhKc'
 
 // Settings reply ~~~~~~~~~//
 global.mess = {
