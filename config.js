@@ -47,9 +47,9 @@ global.idgc = "120363399209756764@g.us"
 global.setprefix = "#"
 
 // User Sosmed
-global.tt = "@lightsecrethosting"
-global.yt = "@lightsecrethosting"
-global.ig = "@undefined"
+global.tt = "@joshyv.1"
+global.yt = ""
+global.ig = "@joshyqzeq"
 
 // Setting Api cVPS
 global.doToken = "APIKEY"
