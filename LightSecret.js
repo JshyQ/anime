@@ -4716,6 +4716,79 @@ case 'vmaids': {
   }
 }
 break
+
+// ============ ANIME REACTION / EMOTION
+case 'cuddle':
+case 'hug':
+case 'kiss':
+case 'lick':
+case 'nom':
+case 'pat':
+case 'poke':
+case 'slap':
+case 'stare':
+case 'highfive':
+case 'bite':
+case 'greet':
+case 'punch':
+case 'handholding':
+case 'tickle':
+case 'kill':
+case 'hold':
+case 'pats':
+case 'wave':
+case 'boop':
+case 'snuggle':
+case 'bully': {
+  // Need to mention someone
+  let who = m.mentionedJid && m.mentionedJid[0] 
+    ? m.mentionedJid[0] 
+    : m.quoted 
+      ? m.quoted.sender 
+      : null
+
+  if (!who) return reply(`Tag seseorang!\nContoh: ${prefix + command} @user`)
+
+  // Some actions that don't really need a target (optional)
+  // but we still require tag as you requested
+
+  try {
+    // Map some aliases to nekos.best endpoints
+    let endpoint = command
+    if (command === 'pats') endpoint = 'pat'
+    if (command === 'hold') endpoint = 'handhold'
+    if (command === 'handholding') endpoint = 'handhold'
+    if (command === 'boop') endpoint = 'poke'
+    if (command === 'greet') endpoint = 'wave'
+    if (command === 'snuggle') endpoint = 'cuddle'
+
+    // Fetch GIF from nekos.best
+    let res = await fetchJson(`https://nekos.best/api/v2/${endpoint}`)
+    let gifUrl = res?.results?.[0]?.url
+
+    if (!gifUrl) {
+      // Fallback to waifu.pics
+      let res2 = await fetchJson(`https://api.waifu.pics/sfw/${endpoint}`)
+      gifUrl = res2?.url
+    }
+
+    if (!gifUrl) return reply(`Gagal mengambil GIF untuk *${command}*`)
+
+    let teks = `*@${m.sender.split('@')[0]}* ${command} *@${who.split('@')[0]}*`
+
+    await LightSecret.sendMessage(m.chat, {
+      video: { url: gifUrl },
+      gifPlayback: true,
+      caption: teks,
+      mentions: [m.sender, who]
+    }, { quoted: m })
+
+  } catch (err) {
+    console.log(err)
+    reply(`Gagal mengirim ${command}. Coba lagi.`)
+  }
+}
+break
 				
 // ============Nsfw
    case 'waifu':
