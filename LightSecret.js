@@ -4717,7 +4717,7 @@ case 'vmaids': {
 }
 break
 
-// ============ ANIME REACTION / EMOTION (Giphy - Fixed)
+// ============ ANIME REACTION / EMOTION (Giphy - Temp File Method)
 case 'cuddle':
 case 'hug':
 case 'kiss':
@@ -4741,6 +4741,8 @@ case 'boop':
 case 'snuggle':
 case 'bully': {
   const axios = require('axios')
+  const fs = require('fs')
+  const path = require('path')
 
   let who = m.mentionedJid?.[0] || (m.quoted ? m.quoted.sender : null)
   if (!who) return reply(`Tag someone!\nExample: ${prefix + command} @user`)
@@ -4773,6 +4775,8 @@ case 'bully': {
   let actionText = captions[command] || command
   let caption = `@${m.sender.split('@')[0]} ${actionText} @${who.split('@')[0]}! How cute~ 💕`
 
+  let tmpFile = null
+
   try {
     let q = `anime ${command}`
     if (command === 'pats') q = 'anime pat'
@@ -4782,55 +4786,67 @@ case 'bully': {
     if (command === 'greet') q = 'anime wave'
     if (command === 'highfive') q = 'anime high five'
 
-    // 1. Search GIF on Giphy
-    let { data } = await axios.get(`https://api.giphy.com/v1/gifs/search`, {
+    // 1. Search on Giphy
+    let { data } = await axios.get('https://api.giphy.com/v1/gifs/search', {
       params: {
         api_key: 'RXBOSN2IHfood3BmxiTXKYee5wXvSUnf',
         q: q,
         limit: 20,
-        rating: 'pg-13',
-        lang: 'en'
+        rating: 'pg-13'
       },
       timeout: 12000
     })
 
     let gifs = data?.data || []
-    if (gifs.length === 0) return reply(`No GIF found for *${command}*`)
+    if (!gifs.length) return reply(`No GIF found for *${command}*`)
 
     let random = gifs[Math.floor(Math.random() * gifs.length)]
+    let id = random.id
 
-    // Prefer MP4 (more reliable for WhatsApp) then GIF
-    let mediaUrl = random?.images?.original?.mp4 
-                || random?.images?.fixed_height?.mp4 
-                || random?.images?.downsized?.url 
-                || random?.images?.original?.url
+    // Clean direct media URL (more reliable)
+    let mediaUrl = `https://i.giphy.com/media/${id}/giphy.mp4`
 
-    if (!mediaUrl) return reply(`Failed to get media URL.`)
+    console.log(`[REACTION] Downloading: ${mediaUrl}`)
 
-    console.log(`[REACTION] Media URL:`, mediaUrl)
-
-    // 2. Download media as buffer (this avoids Baileys 400 error)
+    // 2. Download to buffer
     let mediaRes = await axios.get(mediaUrl, {
       responseType: 'arraybuffer',
       timeout: 20000,
       headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+        'Accept': '*/*'
       }
     })
 
     let buffer = Buffer.from(mediaRes.data)
 
-    // 3. Send as GIF / video
+    // 3. Save to temporary file
+    tmpFile = path.join(__dirname, `../tmp_${Date.now()}.mp4`)
+    // fallback if __dirname issue
+    if (!fs.existsSync(path.dirname(tmpFile))) {
+      tmpFile = `./tmp_${Date.now()}.mp4`
+    }
+    fs.writeFileSync(tmpFile, buffer)
+
+    // 4. Send from file (Baileys likes this more than remote URL)
     await LightSecret.sendMessage(m.chat, {
-      video: buffer,
+      video: fs.readFileSync(tmpFile),
+      mimetype: 'video/mp4',
       gifPlayback: true,
       caption: caption,
       mentions: [m.sender, who]
     }, { quoted: m })
 
+    console.log(`[REACTION] Sent successfully`)
+
   } catch (err) {
     console.log(`[REACTION] Error:`, err.message)
     reply(`Failed to send ${command} GIF.\n${err.message}`)
+  } finally {
+    // Clean temp file
+    try {
+      if (tmpFile && fs.existsSync(tmpFile)) fs.unlinkSync(tmpFile)
+    } catch (e) {}
   }
 }
 break
