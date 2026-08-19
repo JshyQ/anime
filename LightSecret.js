@@ -4717,142 +4717,37 @@ case 'vmaids': {
 }
 break
 
-// ============ ANIME REACTION / EMOTION (Klipy)
-case 'cuddle':
-case 'hug':
-case 'kiss':
-case 'lick':
-case 'nom':
-case 'pat':
-case 'poke':
-case 'slap':
-case 'stare':
-case 'highfive':
-case 'bite':
-case 'greet':
-case 'punch':
-case 'handholding':
-case 'tickle':
-case 'kill':
-case 'hold':
-case 'pats':
-case 'wave':
-case 'boop':
-case 'snuggle':
-case 'bully': {
+case 'hug': {
   const axios = require('axios')
   const fs = require('fs')
 
   let who = m.mentionedJid?.[0] || (m.quoted ? m.quoted.sender : null)
-  if (!who) return reply(`Tag someone!\nExample: ${prefix + command} @user`)
-
-  const captions = {
-    hug: 'is hugging',
-    cuddle: 'is cuddling with',
-    kiss: 'kissed',
-    lick: 'licked',
-    nom: 'is nomming',
-    pat: 'is patting',
-    pats: 'is patting',
-    poke: 'poked',
-    boop: 'booped',
-    slap: 'slapped',
-    stare: 'is staring at',
-    highfive: 'high-fived',
-    bite: 'bit',
-    greet: 'greeted',
-    wave: 'waved at',
-    punch: 'punched',
-    handholding: 'is holding hands with',
-    hold: 'is holding',
-    tickle: 'is tickling',
-    kill: 'killed',
-    snuggle: 'is snuggling with',
-    bully: 'is bullying'
-  }
-
-  let actionText = captions[command] || command
-  let caption = `@${m.sender.split('@')[0]} ${actionText} @${who.split('@')[0]}! How cute~ 💕`
-  let tmpFile = null
+  if (!who) return reply(`Tag someone!\nExample: .hug @user`)
 
   try {
-    let q = `anime ${command}`
-    if (command === 'pats') q = 'anime pat'
-    if (command === 'boop') q = 'anime poke'
-    if (command === 'handholding' || command === 'hold') q = 'anime hand holding'
-    if (command === 'snuggle') q = 'anime cuddle'
-    if (command === 'greet') q = 'anime wave'
-    if (command === 'highfive') q = 'anime high five'
-
     const KLIPY_KEY = 'kDZtflCSmZeZH9bOjdvZ9bXmRowh36sZXghZhJECdpm0CODO501pS6ZHhbW3gYom'
 
     let { data } = await axios.get(`https://api.klipy.com/api/v1/${KLIPY_KEY}/gifs/search`, {
-      params: {
-        q: q,
-        per_page: 20,
-        locale: 'en'
-      },
+      params: { q: 'anime hug', per_page: 10, locale: 'en' },
       timeout: 15000
     })
 
+    console.log('[TEST] Klipy response keys:', Object.keys(data || {}))
+    console.log('[TEST] Raw sample:', JSON.stringify(data).slice(0, 400))
+
     let gifs = data?.data || data?.results || data?.gifs || []
-    if (!Array.isArray(gifs) || gifs.length === 0) {
-      console.log('[REACTION] Klipy raw:', JSON.stringify(data).slice(0, 300))
-      return reply(`No GIF found for *${command}*`)
-    }
+    console.log('[TEST] GIFs count:', gifs.length)
 
-    let random = gifs[Math.floor(Math.random() * gifs.length)]
+    if (!gifs.length) return reply('No GIF found')
 
-    let mediaUrl = random?.file?.md?.gif?.url
-                || random?.file?.hd?.gif?.url
-                || random?.file?.sm?.gif?.url
-                || random?.url
-                || random?.media_url
-                || random?.gif?.url
-                || random?.images?.original?.url
-                || random?.media?.[0]?.gif?.url
-                || random?.media?.[0]?.mp4?.url
+    let item = gifs[0]
+    console.log('[TEST] Item keys:', Object.keys(item))
 
-    if (!mediaUrl) {
-      console.log('[REACTION] Random item keys:', Object.keys(random))
-      return reply(`Failed to get media URL from Klipy.`)
-    }
-
-    console.log(`[REACTION] Downloading: ${mediaUrl}`)
-
-    let mediaRes = await axios.get(mediaUrl, {
-      responseType: 'arraybuffer',
-      timeout: 20000,
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
-      }
-    })
-
-    let buffer = Buffer.from(mediaRes.data)
-    tmpFile = `./tmp_${Date.now()}.mp4`
-    fs.writeFileSync(tmpFile, buffer)
-
-    await LightSecret.sendMessage(m.chat, {
-      video: fs.readFileSync(tmpFile),
-      mimetype: 'video/mp4',
-      gifPlayback: true,
-      caption: caption,
-      mentions: [m.sender, who]
-    }, { quoted: m })
-
-    console.log(`[REACTION] Sent successfully`)
-
-  } catch (err) {
-    console.log(`[REACTION] Error:`, err.message)
-    if (err.response) {
-      console.log(`[REACTION] Status:`, err.response.status)
-      console.log(`[REACTION] Body:`, JSON.stringify(err.response.data).slice(0, 200))
-    }
-    reply(`Failed to send ${command} GIF.\n${err.message}`)
-  } finally {
-    try {
-      if (tmpFile && fs.existsSync(tmpFile)) fs.unlinkSync(tmpFile)
-    } catch (e) {}
+    reply('Klipy test OK — check terminal logs')
+  } catch (e) {
+    console.log('[TEST] Error:', e.message)
+    if (e.response) console.log('[TEST] Status:', e.response.status, e.response.data)
+    reply('Klipy test failed — check terminal')
   }
 }
 break
