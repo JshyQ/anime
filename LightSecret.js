@@ -4786,25 +4786,111 @@ case 'bully': {
     if (command === 'greet') q = 'anime wave'
     if (command === 'highfive') q = 'anime high five'
 
-    // 1. Search on Giphy
-    let { data } = await axios.get('https://api.giphy.com/v1/gifs/search', {
+    // ============ ANIME REACTION / EMOTION (Klipy)
+case 'cuddle':
+case 'hug':
+case 'kiss':
+case 'lick':
+case 'nom':
+case 'pat':
+case 'poke':
+case 'slap':
+case 'stare':
+case 'highfive':
+case 'bite':
+case 'greet':
+case 'punch':
+case 'handholding':
+case 'tickle':
+case 'kill':
+case 'hold':
+case 'pats':
+case 'wave':
+case 'boop':
+case 'snuggle':
+case 'bully': {
+  const axios = require('axios')
+  const fs = require('fs')
+  const path = require('path')
+
+  let who = m.mentionedJid?.[0] || (m.quoted ? m.quoted.sender : null)
+  if (!who) return reply(`Tag someone!\nExample: ${prefix + command} @user`)
+
+  const captions = {
+    hug: 'is hugging',
+    cuddle: 'is cuddling with',
+    kiss: 'kissed',
+    lick: 'licked',
+    nom: 'is nomming',
+    pat: 'is patting',
+    pats: 'is patting',
+    poke: 'poked',
+    boop: 'booped',
+    slap: 'slapped',
+    stare: 'is staring at',
+    highfive: 'high-fived',
+    bite: 'bit',
+    greet: 'greeted',
+    wave: 'waved at',
+    punch: 'punched',
+    handholding: 'is holding hands with',
+    hold: 'is holding',
+    tickle: 'is tickling',
+    kill: 'killed',
+    snuggle: 'is snuggling with',
+    bully: 'is bullying'
+  }
+
+  let actionText = captions[command] || command
+  let caption = `@${m.sender.split('@')[0]} ${actionText} @${who.split('@')[0]}! How cute~ 💕`
+
+  let tmpFile = null
+
+  try {
+    let q = `anime ${command}`
+    if (command === 'pats') q = 'anime pat'
+    if (command === 'boop') q = 'anime poke'
+    if (command === 'handholding' || command === 'hold') q = 'anime hand holding'
+    if (command === 'snuggle') q = 'anime cuddle'
+    if (command === 'greet') q = 'anime wave'
+    if (command === 'highfive') q = 'anime high five'
+
+    const KLIPY_KEY = 'kDZtflCSmZeZH9bOjdvZ9bXmRowh36sZXghZhJECdpm0CODO501pS6ZHhbW3gYom'
+
+    // 1. Search GIF on Klipy
+    let { data } = await axios.get(`https://api.klipy.com/api/v1/${KLIPY_KEY}/gifs/search`, {
       params: {
-        api_key: 'RXBOSN2IHfood3BmxiTXKYee5wXvSUnf',
         q: q,
-        limit: 20,
-        rating: 'pg-13'
+        per_page: 20,
+        locale: 'en'
       },
-      timeout: 12000
+      timeout: 15000
     })
 
-    let gifs = data?.data || []
-    if (!gifs.length) return reply(`No GIF found for *${command}*`)
+    // Klipy response structure can vary slightly
+    let gifs = data?.data || data?.results || data?.gifs || []
+    if (!Array.isArray(gifs) || gifs.length === 0) {
+      console.log('[REACTION] Klipy raw:', JSON.stringify(data).slice(0, 300))
+      return reply(`No GIF found for *${command}*`)
+    }
 
     let random = gifs[Math.floor(Math.random() * gifs.length)]
-    let id = random.id
 
-    // Clean direct media URL (more reliable)
-    let mediaUrl = `https://i.giphy.com/media/${id}/giphy.mp4`
+    // Try common media URL fields
+    let mediaUrl = random?.file?.md?.gif?.url
+                || random?.file?.hd?.gif?.url
+                || random?.file?.sm?.gif?.url
+                || random?.url
+                || random?.media_url
+                || random?.gif?.url
+                || random?.images?.original?.url
+                || random?.media?.[0]?.gif?.url
+                || random?.media?.[0]?.mp4?.url
+
+    if (!mediaUrl) {
+      console.log('[REACTION] Random item keys:', Object.keys(random))
+      return reply(`Failed to get media URL from Klipy.`)
+    }
 
     console.log(`[REACTION] Downloading: ${mediaUrl}`)
 
@@ -4813,22 +4899,17 @@ case 'bully': {
       responseType: 'arraybuffer',
       timeout: 20000,
       headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-        'Accept': '*/*'
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
       }
     })
 
     let buffer = Buffer.from(mediaRes.data)
 
-    // 3. Save to temporary file
-    tmpFile = path.join(__dirname, `../tmp_${Date.now()}.mp4`)
-    // fallback if __dirname issue
-    if (!fs.existsSync(path.dirname(tmpFile))) {
-      tmpFile = `./tmp_${Date.now()}.mp4`
-    }
+    // 3. Save temp file
+    tmpFile = `./tmp_${Date.now()}.mp4`
     fs.writeFileSync(tmpFile, buffer)
 
-    // 4. Send from file (Baileys likes this more than remote URL)
+    // 4. Send from file (avoids Baileys URL 400 error)
     await LightSecret.sendMessage(m.chat, {
       video: fs.readFileSync(tmpFile),
       mimetype: 'video/mp4',
@@ -4841,9 +4922,12 @@ case 'bully': {
 
   } catch (err) {
     console.log(`[REACTION] Error:`, err.message)
+    if (err.response) {
+      console.log(`[REACTION] Status:`, err.response.status)
+      console.log(`[REACTION] Body:`, JSON.stringify(err.response.data).slice(0, 200))
+    }
     reply(`Failed to send ${command} GIF.\n${err.message}`)
   } finally {
-    // Clean temp file
     try {
       if (tmpFile && fs.existsSync(tmpFile)) fs.unlinkSync(tmpFile)
     } catch (e) {}
