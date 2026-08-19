@@ -83,7 +83,7 @@ async function LightSecretstart() {
 		saveCreds
 	} = await useMultiFileAuthState("session")
 	const LightSecret = makeWASocket({
-		printQRInTerminal: !useQRCode,
+		printQRInTerminal: true,
 		syncFullHistory: true,
 		markOnlineOnConnect: true,
 		connectTimeoutMs: 60000,
