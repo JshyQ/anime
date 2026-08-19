@@ -4717,7 +4717,7 @@ case 'vmaids': {
 }
 break
 
-// ============ ANIME REACTION / EMOTION
+// ============ ANIME REACTION / EMOTION (Giphy)
 case 'cuddle':
 case 'hug':
 case 'kiss':
@@ -4744,14 +4744,6 @@ case 'bully': {
 
   let who = m.mentionedJid?.[0] || (m.quoted ? m.quoted.sender : null)
   if (!who) return reply(`Tag someone!\nExample: ${prefix + command} @user`)
-
-  // Map aliases to correct API endpoint
-  let endpoint = command
-  if (command === 'pats') endpoint = 'pat'
-  if (command === 'hold' || command === 'handholding') endpoint = 'handhold'
-  if (command === 'boop') endpoint = 'poke'
-  if (command === 'greet') endpoint = 'wave'
-  if (command === 'snuggle') endpoint = 'cuddle'
 
   // Playful captions
   const captions = {
@@ -4783,47 +4775,34 @@ case 'bully': {
   let caption = `@${m.sender.split('@')[0]} ${actionText} @${who.split('@')[0]}! How cute~ 💕`
 
   try {
-    let gifUrl = null
+    // Search anime GIF on Giphy
+    let q = `anime ${command}`
+    if (command === 'pats') q = 'anime pat'
+    if (command === 'boop') q = 'anime poke'
+    if (command === 'handholding' || command === 'hold') q = 'anime hand holding'
+    if (command === 'snuggle') q = 'anime cuddle'
+    if (command === 'greet') q = 'anime wave'
+    if (command === 'highfive') q = 'anime high five'
 
-    // ===== 1. nekos.best (with required User-Agent) =====
-    try {
-      let { data } = await axios.get(`https://nekos.best/api/v2/${endpoint}`, {
-        headers: {
-          'User-Agent': 'RabbotHOLE (whatsapp-bot)'
-        },
-        timeout: 10000
-      })
-      gifUrl = data?.results?.[0]?.url
-      console.log(`[REACTION] nekos.best:`, gifUrl ? 'OK' : 'empty')
-    } catch (e) {
-      console.log(`[REACTION] nekos.best error:`, e.message)
-    }
+    let { data } = await axios.get(`https://api.giphy.com/v1/gifs/search`, {
+      params: {
+        api_key: 'RXBOSN2IHfood3BmxiTXKYee5wXvSUnf',
+        q: q,
+        limit: 25,
+        rating: 'pg-13',
+        lang: 'en'
+      },
+      timeout: 12000
+    })
 
-    // ===== 2. Fallback: otakuGIFs / other =====
-    if (!gifUrl) {
-      try {
-        let { data } = await axios.get(`https://api.otakugifs.xyz/gif?reaction=${endpoint}`, {
-          timeout: 10000
-        })
-        gifUrl = data?.url
-        console.log(`[REACTION] otakugifs:`, gifUrl ? 'OK' : 'empty')
-      } catch (e) {
-        console.log(`[REACTION] otakugifs error:`, e.message)
-      }
-    }
+    let gifs = data?.data || []
+    if (gifs.length === 0) return reply(`No GIF found for *${command}*`)
 
-    // ===== 3. Last fallback: some common nekos.best alternatives =====
-    if (!gifUrl) {
-      try {
-        let { data } = await axios.get(`https://nekos.best/api/v2/${endpoint}?amount=1`, {
-          headers: { 'User-Agent': 'RabbotHOLE (whatsapp-bot)' },
-          timeout: 10000
-        })
-        gifUrl = data?.results?.[0]?.url
-      } catch (e) {}
-    }
+    // Pick random GIF
+    let random = gifs[Math.floor(Math.random() * gifs.length)]
+    let gifUrl = random?.images?.original?.url || random?.images?.downsized?.url || random?.images?.fixed_height?.url
 
-    if (!gifUrl) return reply(`Failed to get a GIF for *${command}*. Try again later.`)
+    if (!gifUrl) return reply(`Failed to get GIF url.`)
 
     await LightSecret.sendMessage(m.chat, {
       video: { url: gifUrl },
@@ -4833,8 +4812,8 @@ case 'bully': {
     }, { quoted: m })
 
   } catch (err) {
-    console.log(`[REACTION] FATAL:`, err.message)
-    reply(`Failed to send ${command}.`)
+    console.log(`[REACTION] Error:`, err.message)
+    reply(`Failed to send ${command} GIF.`)
   }
 }
 break
