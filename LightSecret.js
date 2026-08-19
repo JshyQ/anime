@@ -4735,8 +4735,7 @@ case 'hug': {
     console.log('[TEST] Klipy response keys:', Object.keys(data || {}))
     console.log('[TEST] Raw sample:', JSON.stringify(data).slice(0, 400))
 
-    let gifs = data?.data || data?.results || data?.gifs || []
-   const gifs = res.data?.data || [];
+  const gifs = data?.data?.data || data?.results || data?.gifs || [];
 
 console.log("[TEST] GIFs count:", gifs.length);
 console.log("[TEST] First GIF:", gifs[0]?.file?.hd?.gif?.url);
