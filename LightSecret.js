@@ -4717,7 +4717,7 @@ case 'vmaids': {
 }
 break
 
-// ============ ANIME REACTION / EMOTION (Giphy - Temp File Method)
+// ============ ANIME REACTION / EMOTION (Klipy)
 case 'cuddle':
 case 'hug':
 case 'kiss':
@@ -4742,7 +4742,6 @@ case 'snuggle':
 case 'bully': {
   const axios = require('axios')
   const fs = require('fs')
-  const path = require('path')
 
   let who = m.mentionedJid?.[0] || (m.quoted ? m.quoted.sender : null)
   if (!who) return reply(`Tag someone!\nExample: ${prefix + command} @user`)
@@ -4774,76 +4773,6 @@ case 'bully': {
 
   let actionText = captions[command] || command
   let caption = `@${m.sender.split('@')[0]} ${actionText} @${who.split('@')[0]}! How cute~ 💕`
-
-  let tmpFile = null
-
-  try {
-    let q = `anime ${command}`
-    if (command === 'pats') q = 'anime pat'
-    if (command === 'boop') q = 'anime poke'
-    if (command === 'handholding' || command === 'hold') q = 'anime hand holding'
-    if (command === 'snuggle') q = 'anime cuddle'
-    if (command === 'greet') q = 'anime wave'
-    if (command === 'highfive') q = 'anime high five'
-
-    // ============ ANIME REACTION / EMOTION (Klipy)
-case 'cuddle':
-case 'hug':
-case 'kiss':
-case 'lick':
-case 'nom':
-case 'pat':
-case 'poke':
-case 'slap':
-case 'stare':
-case 'highfive':
-case 'bite':
-case 'greet':
-case 'punch':
-case 'handholding':
-case 'tickle':
-case 'kill':
-case 'hold':
-case 'pats':
-case 'wave':
-case 'boop':
-case 'snuggle':
-case 'bully': {
-  const axios = require('axios')
-  const fs = require('fs')
-  const path = require('path')
-
-  let who = m.mentionedJid?.[0] || (m.quoted ? m.quoted.sender : null)
-  if (!who) return reply(`Tag someone!\nExample: ${prefix + command} @user`)
-
-  const captions = {
-    hug: 'is hugging',
-    cuddle: 'is cuddling with',
-    kiss: 'kissed',
-    lick: 'licked',
-    nom: 'is nomming',
-    pat: 'is patting',
-    pats: 'is patting',
-    poke: 'poked',
-    boop: 'booped',
-    slap: 'slapped',
-    stare: 'is staring at',
-    highfive: 'high-fived',
-    bite: 'bit',
-    greet: 'greeted',
-    wave: 'waved at',
-    punch: 'punched',
-    handholding: 'is holding hands with',
-    hold: 'is holding',
-    tickle: 'is tickling',
-    kill: 'killed',
-    snuggle: 'is snuggling with',
-    bully: 'is bullying'
-  }
-
-  let actionText = captions[command] || command
-  let caption = `@${m.sender.split('@')[0]} ${actionText} @${who.split('@')[0]}! How cute~ 💕`
-
   let tmpFile = null
 
   try {
@@ -4857,7 +4786,6 @@ case 'bully': {
 
     const KLIPY_KEY = 'kDZtflCSmZeZH9bOjdvZ9bXmRowh36sZXghZhJECdpm0CODO501pS6ZHhbW3gYom'
 
-    // 1. Search GIF on Klipy
     let { data } = await axios.get(`https://api.klipy.com/api/v1/${KLIPY_KEY}/gifs/search`, {
       params: {
         q: q,
@@ -4867,7 +4795,6 @@ case 'bully': {
       timeout: 15000
     })
 
-    // Klipy response structure can vary slightly
     let gifs = data?.data || data?.results || data?.gifs || []
     if (!Array.isArray(gifs) || gifs.length === 0) {
       console.log('[REACTION] Klipy raw:', JSON.stringify(data).slice(0, 300))
@@ -4876,7 +4803,6 @@ case 'bully': {
 
     let random = gifs[Math.floor(Math.random() * gifs.length)]
 
-    // Try common media URL fields
     let mediaUrl = random?.file?.md?.gif?.url
                 || random?.file?.hd?.gif?.url
                 || random?.file?.sm?.gif?.url
@@ -4894,7 +4820,6 @@ case 'bully': {
 
     console.log(`[REACTION] Downloading: ${mediaUrl}`)
 
-    // 2. Download to buffer
     let mediaRes = await axios.get(mediaUrl, {
       responseType: 'arraybuffer',
       timeout: 20000,
@@ -4904,12 +4829,9 @@ case 'bully': {
     })
 
     let buffer = Buffer.from(mediaRes.data)
-
-    // 3. Save temp file
     tmpFile = `./tmp_${Date.now()}.mp4`
     fs.writeFileSync(tmpFile, buffer)
 
-    // 4. Send from file (avoids Baileys URL 400 error)
     await LightSecret.sendMessage(m.chat, {
       video: fs.readFileSync(tmpFile),
       mimetype: 'video/mp4',
