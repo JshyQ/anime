@@ -4742,10 +4742,16 @@ console.log("[TEST] First GIF:", gifs[0]?.file?.hd?.gif?.url);
 
     if (!gifs.length) return reply('No GIF found')
 
-    let item = gifs[0]
-    console.log('[TEST] Item keys:', Object.keys(item))
+    let item = gifs[Math.floor(Math.random() * gifs.length)];
 
-    reply('Klipy test OK — check terminal logs')
+console.log('[TEST] Item keys:', Object.keys(item));
+
+await sock.sendMessage(m.chat, {
+  video: { url: item.file.hd.gif.url },
+  gifPlayback: true,
+  caption: `@${m.sender.split('@')[0]} hugs @${who.split('@')[0]} 🤗`,
+  mentions: [m.sender, who]
+}, { quoted: m });
   } catch (e) {
     console.log('[TEST] Error:', e.message)
     if (e.response) console.log('[TEST] Status:', e.response.status, e.response.data)
